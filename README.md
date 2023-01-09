@@ -7,5 +7,13 @@ The attack trees present in this repository were generated using the [Deciduous 
 
 # Content
 
+# Not considered
+
+- Attacks aimed at elevating access rights to previously compromised accounts
+
+# Attack tree
+
+
+
 # Useful links
 - [GitHub supply chain attack tree](https://github.com/boostsecurityio/supply-chain-research) by [boostsecurityio](https://github.com/boostsecurityio)
