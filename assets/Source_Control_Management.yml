@@ -1,1 +1,289 @@
+title: Software Supply Chain Attack Tree in Azure DevOps Server - Source Control Management
+theme: default # default/accessible/classic
 
+
+facts:
+- attacker_is_repo_reader: Attacker can read source code
+  from:
+  - Attacker_is_Reader_in_project
+  - Monitoring_permission_management_2
+- uses_ADO:
+  from:
+  - reality
+- Uses_ADO_plugins: Uses ADO plugins
+  from:
+  - reality
+- Uses_contractors:
+  from:
+  - reality
+- attacker_without_project_access: Attacker has no repo access
+  from:
+  - uses_ADO
+- Attacker_is_Reader_in_project: Attacker is Reader in project
+  from:
+  - uses_ADO
+- token_R: Access token has only read access
+  from:
+  - monitor_tokens
+- token_RW: Access token has contribute acces
+  from:
+  - monitor_tokens
+- attacker_has_repo_contribute_access:
+  from:
+  - uses_ADO
+  - Other_elavation
+  - attacker_is_contributor
+- attacker_is_project_admin: Attacker is Project admin
+  from:
+  - uses_ADO
+  - attacker_is_collection_admin
+- attacker_is_collection_admin:
+  from:
+  - uses_ADO
+  - Monitoring_permission_management_2
+- attacker_is_code_reviewer: Attacker is Code reviewer in project
+  from:
+  - uses_ADO
+  - Monitoring_permission_management_2
+- attacker_is_contributor: Attacker is Contributor in project
+  from:
+  - uses_ADO
+  - Monitoring_permission_management_2
+- target_branch_has_Branch_Protection:
+  from:
+  - attacker_has_repo_contribute_access
+- repo_has_no_Tag_Protection_Rule:
+  from:
+  - attacker_has_repo_contribute_access
+- victim_has_reviewer_access:
+  from:
+  - Monitoring_permission_management_2
+- Attacker_has_reviewer_access:
+  from:
+  - Other_elavation
+  - attacker_is_code_reviewer
+- obtain_genuine_PR_approval_with_initially_good_code:
+  from:
+  - target_branch_has_Branch_Protection
+- target_branch_has_no_Branch_Protection:
+  from:
+  - attacker_has_repo_contribute_access
+  - encrypt_SSH_private_key
+- Attacker_can_manage_permissions_in_project:
+  from:
+  - attacker_is_project_admin
+
+
+attacks:
+- Steal_the_source_code: Steal the source code / accidentally posting code to a public repository
+  from:
+  - attacker_is_repo_reader
+- Install_malicious_ADO_plugin:
+  from:
+  - install_only_necessary_and_trusted_plugins
+  - Check_plugins_before_installation
+  - attacker_is_collection_admin
+- forge_second_valid_identity: Forge 2nd valid membership with repo write access
+  from:
+  - target_branch_has_Branch_Protection
+- compromise_ADO_plugin: Compromise source code of ADO plugin and publish in marketplace.visualstudio.com or other places
+  from:
+  - Uses_ADO_plugins
+- compromise_contractor:
+  from:
+  - Uses_contractors
+  - attacker_without_project_access
+- compromise_some_account: Compromise some corporate account
+  from:
+  - attacker_without_project_access
+- steal_SSH_key_with_repo_write_access: Steal SSH key with write access (user or Deploy Key)
+  from:
+  - attacker_without_project_access
+- steal_ADO_token: Steal ADO access token
+  from:
+  - attacker_without_project_access
+- abuse_ADO_Action_PR_approval_permission:
+  from:
+  - target_branch_has_Branch_Protection
+- get_enough_fake_PR_approvals:
+  from:
+  - allow_one_membership_per_identity
+  - disable_ADO_Actions_PR_approval_permission
+- abuse_PR_approval_to_sneak_in_bad_code:
+  from:
+  - obtain_genuine_PR_approval_with_initially_good_code
+- bypass_Branch_Protection:
+  from:
+  - attacker_is_project_admin
+- push_remote_release_tag:
+  from:
+  - repo_has_no_Tag_Protection_Rule
+- Approve_malicious_PR_from_another_compromised_account:
+  from:
+  - victim_has_reviewer_access
+  - target_branch_has_Branch_Protection
+  - Attacker_has_reviewer_access
+- abuse_admin_rights_and_skip_Tag_Protection:
+  from:
+  - attacker_is_project_admin
+- abuse_admin_rights_and_disable_Branch_Protection_admin_enforcement:
+  from:
+  - enforce_branch_protection_for_admins
+- add_evil_commits_to_good_PR_and_self_approve:
+  from:
+  - target_branch_has_Branch_Protection
+- fool_PR_reviewer_of_huge_diff_with_evil_code: Fool PR reviewer of huge diff with evil code (LGTM)
+  from:
+  - target_branch_has_Branch_Protection
+- fool_PR_reviewer_by_adding_evil_dependency_reference:
+  from:
+  - target_branch_has_Branch_Protection
+- Elevate_to_repo_deleting_rights: Elevate access to repo deleting rights
+  from:
+  - Monitoring_access_rights_management
+- Other_elavation:
+  from:
+  - Monitoring_access_rights_management
+
+
+mitigations:
+- Implement_DLP: Implement DLP process
+  from:
+  - Steal_the_source_code
+- Monitor_email_notification_about_new_plugin_installation:
+  from:
+  - Install_malicious_ADO_plugin
+- Monitoring_permission_management_2: Monitoring permission management
+  from:
+  - compromise_some_account
+  - compromise_contractor
+- encrypt_SSH_private_key:
+  from:
+  - steal_SSH_key_with_repo_write_access
+- allow_one_membership_per_identity:
+  from:
+  - forge_second_valid_identity
+- dismiss_stale_PR_approvals:
+  from:
+  - abuse_PR_approval_to_sneak_in_bad_code
+- require_Last_Push_Approval_branch_protection:
+  from:
+  - add_evil_commits_to_good_PR_and_self_approve
+- disable_ADO_Actions_PR_approval_permission:
+  from:
+  - abuse_ADO_Action_PR_approval_permission
+- require_two_person_review: Require two-person review
+  from:
+  - get_enough_fake_PR_approvals
+  - Approve_malicious_PR_from_another_compromised_account
+- require_security_champion_review: Require review by a Security champion or Information security officer
+  from:
+  - get_enough_fake_PR_approvals
+  - Approve_malicious_PR_from_another_compromised_account
+- setup_Tag_Protection_Rule:
+  from:
+  - push_remote_release_tag
+- enforce_branch_protection_for_admins:
+  from:
+  - bypass_Branch_Protection
+- setup_robust_branch_protection:
+  from:
+  - target_branch_has_no_Branch_Protection
+- manage_org_and_repo_settings_as_code:
+  from:
+  - abuse_admin_rights_and_disable_Branch_Protection_admin_enforcement
+  - abuse_admin_rights_and_skip_Tag_Protection
+- only_accept_PR_with_small_changes_and_review_carefully:
+  from:
+  - fool_PR_reviewer_of_huge_diff_with_evil_code
+- only_accept_trusted_dependencies:
+  from:
+  - fool_PR_reviewer_by_adding_evil_dependency_reference
+  - implement_SCA
+  - Implement_base_image_analysis
+- implement_SCA:
+  from:
+  - fool_PR_reviewer_by_adding_evil_dependency_reference
+- Implement_base_image_analysis:
+  from:
+  - fool_PR_reviewer_by_adding_evil_dependency_reference
+- install_only_necessary_and_trusted_plugins:
+  from:
+  - compromise_ADO_plugin
+- Check_plugins_before_installation:
+  from:
+  - compromise_ADO_plugin
+
+- monitor_tokens: Monitor access token usage
+  from:
+  - steal_ADO_token
+- Monitoring_access_rights_management:
+  from:
+  - attacker_is_project_admin
+- Repository_deletion_monitoring:
+  from:
+  - Elevate_to_repo_deleting_rights
+  - attacker_is_project_admin
+- Periodic_backup_of_the_repository:
+  from:
+  - Elevate_to_repo_deleting_rights
+  - attacker_is_project_admin
+
+
+goals:
+- Leak_source_code:
+  from:
+  - Implement_DLP
+- Remote_code_execition: RCE on ADO Server or Build agent
+  from:
+  - Monitor_email_notification_about_new_plugin_installation
+- modify_release_tag_to_point_vulnerable_commit:
+  from:
+  - manage_org_and_repo_settings_as_code
+  - setup_Tag_Protection_Rule
+- remove_malicious_code: Delete malicious code from history (i.e. force push or delete branch)
+  from:
+  - setup_robust_branch_protection
+  - manage_org_and_repo_settings_as_code
+- submit_malicious_code:
+  from:
+  - setup_robust_branch_protection
+  - require_Last_Push_Approval_branch_protection
+  - require_two_person_review
+  - manage_org_and_repo_settings_as_code
+  - dismiss_stale_PR_approvals
+  - only_accept_PR_with_small_changes_and_review_carefully
+  - only_accept_trusted_dependencies
+  - require_security_champion_review
+- Remove_a_repository:
+  from:
+  - Monitoring_access_rights_management
+  - Repository_deletion_monitoring
+  - Periodic_backup_of_the_repository
+  
+
+filter: # Using the fiter is useful to generate narrowly focused tree
+## By goals
+# - submit_malicious_code
+# - remove_malicious_code
+# - modify_release_tag_to_point_vulnerable_commit
+## By facts
+# - target_branch_has_no_Branch_Protection
+# - target_branch_has_Branch_Protection
+# - repo_has_no_Tag_Protection_Rule
+# - victim_has_repo_write_access
+# - victim_is_repo_admin
+# - victim_is_GitHub_App_Manager
+# - victim_is_org_owner
+## By attacks
+# - forge_second_valid_identity
+# - abuse_Github_Action_PR_approval_permission
+# - abuse_PR_approval_to_sneak_in_bad_code
+# - steal_SSH_key_with_repo_write_access
+# - bypass_Branch_Protection
+# - push_remote_release_tag
+# - abuse_admin_rights_and_skip_Tag_Protection
+# - abuse_admin_rights_and_disable_Branch_Protection_admin_enforcement
+# - add_evil_commits_to_good_PR_and_self_approve
+# - fool_PR_reviewer_of_huge_diff_with_evil_code
+# - fool_PR_reviewer_by_adding_evil_dependency_reference
