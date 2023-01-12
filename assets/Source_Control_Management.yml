@@ -3,17 +3,17 @@ theme: default # default/accessible/classic
 
 
 facts:
-- attacker_is_repo_reader: Attacker can read source code
+- attacker_is_repo_reader: Attacker can read source code # Ветка завершена
   from:
   - Attacker_is_Reader_in_project
   - Monitoring_permission_management_2
 - uses_ADO:
   from:
   - reality
-- Uses_ADO_plugins: Uses ADO plugins
+- Uses_ADO_plugins: Uses ADO plugins to extend the functionality of ADO # Ветка готова
   from:
   - reality
-- Uses_contractors:
+- Uses_contractors: Uses contractors to develop code # Ветка готова
   from:
   - reality
 - attacker_without_project_access: Attacker has no repo access
@@ -37,7 +37,7 @@ facts:
   from:
   - uses_ADO
   - attacker_is_collection_admin
-- attacker_is_collection_admin:
+- attacker_is_collection_admin: Attacker is collection admin or ADO server admin
   from:
   - uses_ADO
   - Monitoring_permission_management_2
@@ -78,9 +78,12 @@ attacks:
 - Steal_the_source_code: Steal the source code / accidentally posting code to a public repository
   from:
   - attacker_is_repo_reader
+- Found_vulnerabilities: Found vulnerabilities in the code (e.g. hardcoded secrets)
+  from:
+  - attacker_is_repo_reader
 - Install_malicious_ADO_plugin:
   from:
-  - install_only_necessary_and_trusted_plugins
+  - Review_plugin_usage_periodically
   - Check_plugins_before_installation
   - attacker_is_collection_admin
 - forge_second_valid_identity: Forge 2nd valid membership with repo write access
@@ -91,12 +94,18 @@ attacks:
   - Uses_ADO_plugins
 - compromise_contractor:
   from:
-  - Uses_contractors
+
+  - attacker_without_project_access
+- Found_public_vuln_in_ADO:
+  from:
+  - attacker_without_project_access
+- Found_0-Day:
+  from:
   - attacker_without_project_access
 - compromise_some_account: Compromise some corporate account
   from:
   - attacker_without_project_access
-- steal_SSH_key_with_repo_write_access: Steal SSH key with write access (user or Deploy Key)
+- steal_SSH_key_with_repo_write_access: Steal ADO SSH key with write access
   from:
   - attacker_without_project_access
 - steal_ADO_token: Steal ADO access token
@@ -147,13 +156,27 @@ attacks:
 
 
 mitigations:
+- Monitoring_ADO_logs: Monitoring ADO and system logs
+  from:
+  - Found_0-Day
+
 - Implement_DLP: Implement DLP process
+  from:
+  - Steal_the_source_code
+- Implement_brand_protection: Implement brand protection (searching for code leaks on the Internet)
   from:
   - Steal_the_source_code
 - Monitor_email_notification_about_new_plugin_installation:
   from:
   - Install_malicious_ADO_plugin
 - Monitoring_permission_management_2: Monitoring permission management
+  from:
+  - compromise_some_account
+  - compromise_contractor
+- Implement_ADO_patch_management:
+  from:
+  - Found_public_vuln_in_ADO
+- Monitoring_contractors_activity: Monitoring contractors activity
   from:
   - compromise_some_account
   - compromise_contractor
@@ -210,16 +233,34 @@ mitigations:
 - install_only_necessary_and_trusted_plugins:
   from:
   - compromise_ADO_plugin
-- Check_plugins_before_installation:
+- Review_plugin_usage_periodically:
+  from:
+  - install_only_necessary_and_trusted_plugins
+- Check_plugins_before_installation: Analyze plugins for security before installation
   from:
   - compromise_ADO_plugin
 
-- monitor_tokens: Monitor access token usage
+- monitor_tokens: Monitoring access token usage
   from:
   - steal_ADO_token
 - Monitoring_access_rights_management:
   from:
   - attacker_is_project_admin
+- Implement_SAST: Implement SAST and code quality control
+  from:
+  - Found_vulnerabilities
+- Implement_Sec_code_review:
+  from:
+  - Found_vulnerabilities
+- Implement_Bug_bounty:
+  from:
+  - Found_vulnerabilities
+- Periodic_external_white_box_audit:
+  from:
+  - Found_vulnerabilities
+- Software_certification: Software certification (e.g. Common Criteria)
+  from:
+  - Found_vulnerabilities
 - Repository_deletion_monitoring:
   from:
   - Elevate_to_repo_deleting_rights
@@ -234,9 +275,22 @@ goals:
 - Leak_source_code:
   from:
   - Implement_DLP
+  - Implement_brand_protection
 - Remote_code_execition: RCE on ADO Server or Build agent
   from:
   - Monitor_email_notification_about_new_plugin_installation
+- Lateral_Movement: Lateral movement and other
+  from:
+  - Remote_code_execition
+  - Implement_Bug_bounty
+  - Periodic_external_white_box_audit
+  - Software_certification
+  - Implement_ADO_patch_management
+  - Monitoring_ADO_logs
+- Lateral_Movement: Lateral movement and other
+  from:
+  - Implement_Sec_code_review
+  - Implement_SAST
 - modify_release_tag_to_point_vulnerable_commit:
   from:
   - manage_org_and_repo_settings_as_code
@@ -255,6 +309,7 @@ goals:
   - only_accept_PR_with_small_changes_and_review_carefully
   - only_accept_trusted_dependencies
   - require_security_champion_review
+  - Lateral_Movement
 - Remove_a_repository:
   from:
   - Monitoring_access_rights_management
